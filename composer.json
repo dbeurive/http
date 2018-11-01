@@ -2,7 +2,7 @@
   "version": "1.0.0",
   "name": "dbeurive/http",
   "description": "This package implements a simple REST requester",
-  "license": "Common Attribution-NonCommercial 4.0 International license",
+  "license": "MIT",
   "authors": [
     {
       "name": "Denis BEURIVE",

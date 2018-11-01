@@ -14,14 +14,6 @@ Or, from within the file composer.json:
         "dbeurive/http": "*"
     }
 
-# License
-
-This code is published under the following license:
-
-[Creative Common Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)](https://creativecommons.org/licenses/by-nc/4.0/legalcode)
-
-See the file [LICENSE.TXT](LICENSE.TXT).
-
 # Synopsis
 
 ## Basic usage
