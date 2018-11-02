@@ -109,19 +109,37 @@ abstract class AbstractRequester
             curl_setopt($session, CURLOPT_POST, true);
         }
 
-        // Warning: do not use the function array_merge() to merge the Curl configurations!
-        //          Values in the input array with numeric keys will be renumbered with incrementing keys starting from
-        //          zero in the result array. Curl options have numeric values!
+        // Merge the two provided list of Curl options:
+        //   - $in_opt_additional_curl_options: the list of "specific" additional Curl options (that apply for this request only).
+        //   - $this->__additionalCurlOptions: the list of "generic" Curl options (that apply for all requests).
+        //
+        // Sanity check : the two list should not contain options in common (except for the option CURLOPT_HTTPHEADER).
+        //
+        // WARNING: do not use the function array_merge() !
+        //
+        //      If, however, the arrays contain numeric keys, the later value will not overwrite the original
+        //      value, but will be appended. Values in the input array with numeric keys will be renumbered
+        //      with incrementing keys starting from zero in the result array.
+        //
+        // Curl options IDs are numerical values !
 
         foreach ($this->__additionalCurlOptions as $_key => $_value) {
+            $v = $_value;
+
             if (array_key_exists($_key, $in_opt_additional_curl_options)) {
                 if (CURLOPT_HTTPHEADER == $_key) {
+
                     // WARNING !!!
+                    //
                     // Be aware that the value for the CURL option "CURLOPT_HTTPHEADER" is an array!
                     // The manipulation of this option must be done with great care!
                     // Some headers from the first list may be redefined within the second list.
                     // TODO: make sure that the intersection between the two lists of headers is empty.
-                    $in_opt_additional_curl_options[CURLOPT_HTTPHEADER] = array_merge(
+                    //
+                    // While header names (for example: "Content-Type") should not be numerical values, the safe
+                    // implementation of the merge function is used below.
+
+                    $v = $this->_safeAssociativeArrayMerge(
                         $in_opt_additional_curl_options[CURLOPT_HTTPHEADER],
                         $this->__additionalCurlOptions[CURLOPT_HTTPHEADER]
                     );
@@ -129,12 +147,15 @@ abstract class AbstractRequester
                     // WARNING !!!
                     // Other Curl options (than CURLOPT_HTTPHEADER) may take arrays as value.
                     // TODO: check whether it is necessary to process special cases other than the one for the option CURLOPT_HTTPHEADER.
-                    throw new ExceptionParameter(sprintf('Duplicated Curl option detected! Option is %s.', $_key));
+                    throw new ExceptionParameter(sprintf('Duplicated Curl option detected! Option is "%s".', $_key));
                 }
             }
-            $in_opt_additional_curl_options[$_key] = $_value;
+
+            // Merging the lists.
+            $in_opt_additional_curl_options[$_key] = $v;
         }
 
+        // Set the options.
         foreach ($in_opt_additional_curl_options as $_key => $_value) {
             curl_setopt($session, $_key, $_value);
         }
@@ -257,6 +278,20 @@ abstract class AbstractRequester
     protected function _safeAssociativeArrayMerge(array $in_associative_array_1, array $in_associative_array_2) {
         $result = $in_associative_array_1;
         foreach ($in_associative_array_2 as $_key => $_value) {
+            if (array_key_exists($_key, $result)) {
+                if ($result[$_key] !== $_value) {
+                    trigger_error(
+                        sprintf('Merging two associative arrays with identical key "%s" (with different values).', $_key),
+                        E_USER_WARNING
+                    );
+                } else {
+                    trigger_error(
+                        sprintf('Merging two associative arrays with identical key "%s" (with same values).', $_key),
+                        E_USER_WARNING
+                    );
+                }
+            }
+
             $result[$_key] = $_value;
         }
         return $result;
